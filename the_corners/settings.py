@@ -31,10 +31,11 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ALLOWED_HOSTS = ["localhost",
-                                 "127.0.0.1", 
-                                 "tasya-nabila41-thecorners.pbp.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost",
+                "127.0.0.1", 
+                "tasya-nabila41-thecorners.pbp.cs.ui.ac.id"]
 
+CSRF_TRUSTED_ORIGINS = ["https://tasya-nabila41-thecorners.pbp.cs.ui.ac.id"]
 
 # Application definition
 
@@ -63,7 +64,7 @@ ROOT_URLCONF = 'the_corners.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -131,7 +132,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 
 USE_I18N = True
 

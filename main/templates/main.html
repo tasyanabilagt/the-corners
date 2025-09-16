@@ -1,9 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+
 <h1>The Corners</h1>
 
 <h4>NPM: </h4>
 <p>{{ npm }}</p> 
+
 <h4>Name: </h4>
 <p>{{ name }}</p> 
-<h4>Class: </h4>
-<p>{{ class }}
 
+<h4>Class: </h4>
+<p>{{ class }}</p>
+
+<a href="{% url 'main:create_product' %}">
+    <button>+ Add New Product</button>
+</a>
+
+<hr>
+
+{% if not product_list %}
+    <p>Belum ada data produk yang terdaftar pada The Corners.</p>
+{% else %}
+    {% for product in product_list %}
+    <div>
+        <h2><a href="{% url 'main:show_product_detail' product.id %}">{{ product.name }}</a></h2>
+
+        <p><b>{{ product.category }}</b>
+        {% if product.is_featured %} | <b>Featured</b>{% endif %} 
+        <i>{{ product.created_at|date:"d M Y H:i" }}</i>
+        | Rp {{ product.price|floatformat:0 }}
+        | Stock: {{ product.stock }}
+        | Rating: {{ product.rating }}</p>
+
+        {% if product.thumbnail %}
+            <img src="{{ product.thumbnail }}" alt="{{ product.name }}" width="150" height="150">
+            <br/>
+        {% endif %}
+
+        <p>{{ product.description|truncatewords:25 }}...</p>
+        
+        <p><a href="{% url 'main:show_product_detail' product.id %}"><button>Show Detail</button></a></p>
+    </div>
+    <hr>
+    {% endfor %}
+{% endif %}
+
+{% endblock content %}
