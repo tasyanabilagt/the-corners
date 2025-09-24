@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+from django.contrib.auth.models import User
 
 # Create your models here.
 # Model untuk menyimpan data produk di database The Corners
@@ -23,6 +24,7 @@ class Product(models.Model):
     thumbnail = models.URLField(blank=True, null=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, blank=False, null=False)
     is_featured = models.BooleanField(default=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
     # Atribut tambahan produk yang bersifat opsional
     stock = models.PositiveIntegerField(default=0)
@@ -48,4 +50,3 @@ class Product(models.Model):
     # Mengecek apakah produk direkomendasikan berdasarkan rating
     def is_recommended(self):
         return self.rating >= 4.5
-    
