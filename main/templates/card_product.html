@@ -1,0 +1,75 @@
+{% load static %}
+{% load custom_filters %}
+
+<div class="bg-[#FEFFFF] rounded-lg shadow-md overflow-hidden border border-[#0B3954] transition transform hover:scale-105 hover:shadow-xl">
+  <!-- Thumbnail -->
+  <div class="relative">
+    {% if product.thumbnail %}
+      <img src="{{ product.thumbnail }}" alt="{{ product.name }}" 
+           class="w-full h-40 object-cover transition-transform duration-300 transform hover:scale-110">
+    {% else %}
+      <div class="w-full h-40 bg-[#BFD7EA]"></div>
+    {% endif %}
+
+    <!-- Category Badge -->
+    <div class="absolute top-2 left-2">
+      <span class="px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#0B3954] text-white">
+        {{ product.category }}
+      </span>
+    </div>
+
+    <!-- Featured Badge -->
+    {% if product.is_featured %}
+      <div class="absolute top-2 right-2">
+        <span class="px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#E0FF4F] text-[#0B3954]">
+          Featured
+        </span>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Content -->
+  <div class="p-4">
+    <!-- Product Name -->
+    <h2 class="text-lg font-bold text-[#0B3954] mb-1 line-clamp-1">
+      <a href="{% url 'main:show_product_detail' product.pk %}" class="hover:text-[#FF6663] transition">
+        {{ product.name }}
+      </a>
+    </h2>
+
+    <!-- Date -->
+    <p class="text-xs text-gray-500 mb-1">
+      <i>{{ product.created_at|date:"d M Y H:i" }}</i>
+    </p>
+
+    <!-- Rating -->
+    <div class="flex items-center mb-1">
+      {% for i in "12345" %}
+        {% if forloop.counter <= product.rating %}
+          <span class="text-yellow-400 text-base">★</span>
+        {% else %}
+          <span class="text-gray-300 text-base">☆</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Price & Stock -->
+    <p class="text-lg font-extrabold text-[#FF6663] mb-1">Rp {{ product.price|floatformat:0 }}</p>
+    <p class="text-xs text-gray-500 mb-3">Stock: {{ product.stock }}</p>
+
+    <!-- Buttons -->
+    <div class="flex gap-1">
+      <a href="{% url 'main:show_product_detail' product.pk %}" class="flex-1">
+        <button class="w-full bg-[#0B3954] text-white px-2 py-1 text-sm rounded-md hover:bg-[#FF6663] transition">Detail</button>
+      </a>
+      {% if user.is_authenticated and product.user == user %}
+        <a href="{% url 'main:edit_product' product.pk %}">
+          <button class="bg-[#E0FF4F] text-[#0B3954] px-2 py-1 text-sm rounded-md hover:bg-[#FF6663] hover:text-white transition">✏️</button>
+        </a>
+        <a href="{% url 'main:delete_product' product.pk %}">
+          <button class="bg-[#FF6663] text-white px-2 py-1 text-sm rounded-md hover:bg-red-700 transition">🗑️</button>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>

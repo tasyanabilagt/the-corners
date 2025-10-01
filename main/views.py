@@ -13,27 +13,30 @@ import datetime
 # Create your views here.
 @login_required(login_url='/login')
 def show_main(request):
-    filter_type = request.GET.get("filter", "all")  # default 'all'
+    products = Product.objects.all()
 
-    if filter_type == "all":
-        product_list = Product.objects.all()
-    else:
-        product_list = Product.objects.filter(user=request.user)
-        
-    # mydata = Member.objects.filter(id__gt=3).values()
-    recommended_products = Product.objects.filter(rating__gt=4).values()
-    
+    # filter kategori
+    category = request.GET.get("category")
+    if category:
+        products = products.filter(category=category)
+
+    # filter all/my
+    filter_type = request.GET.get("filter")
+    if filter_type == "my" and request.user.is_authenticated:
+        products = products.filter(user=request.user)
+
     context = {
-        'npm' : '2406351005',
-        'name': 'Tasya Nabila Anggita Saragih',
-        'class': 'PBP F',
-        'product_list' : product_list,
-        'recommended_products' : recommended_products,
-        'last_login' : request.COOKIES.get('last_login', 'Never'),
-        'user' : request.user
+        "product_list": products,
+        "last_login": request.COOKIES.get("last_login"),
+        "name": "Tasya Nabila Anggita Saragih",
+        "npm": "2406351005",  
+        "class": "PBP F",     
+        "categories": dict(Product.CATEGORY_CHOICES),  # << kategori dikirim
+        "active_category": category,
+        "active_filter": filter_type,
     }
-
     return render(request, "main.html", context)
+
 
 # Tugas 3
 @login_required(login_url='/login') # Tugas 4
@@ -116,3 +119,21 @@ def logout_user(request):
     response = HttpResponseRedirect(reverse('main:login'))
     response.delete_cookie('last_login')
     return response
+
+def edit_product(request, id):
+    product = get_object_or_404(Product, pk=id)
+    form = ProductForm(request.POST or None, instance=product)
+    if form.is_valid() and request.method == 'POST':
+        form.save()
+        return redirect('main:show_main')
+
+    context = {
+        'form': form
+    }
+
+    return render(request, "edit_product.html", context)
+
+def delete_product(request, id):
+    product = get_object_or_404(Product, pk=id)
+    product.delete()
+    return HttpResponseRedirect(reverse('main:show_main'))

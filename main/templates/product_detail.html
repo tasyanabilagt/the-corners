@@ -1,27 +1,99 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block meta %}
+<title>{{ product.name }} - The Corners</title>
+{% endblock meta %}
+
 {% block content %}
-<p><a href="{% url 'main:show_main' %}"><button>← Back to Product List</button></a></p>
+<div class="bg-[#FEFFFF] w-full min-h-screen py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Back Navigation -->
+    <div class="mb-6">
+      <a href="{% url 'main:show_main' %}" class="text-[#0B3954] hover:text-[#FF6663] font-medium transition-colors">
+        ← Back to Products
+      </a>
+    </div>
 
-<h1> {{ product.name }}</h1>
-<p><b>{{ product.category }}</b>
-        {% if product.is_featured %} | <b>Featured</b>{% endif %} 
-        <i>{{ product.created_at|date:"d M Y H:i" }}</i>
-        | Rp {{ product.price|floatformat:0 }}
-        | Stock: {{ product.stock }}
-        | Rating: {{ product.rating }}</p>
+    <!-- Product Card -->
+    <article class="bg-white rounded-xl border border-[#0B3954] shadow-lg overflow-hidden">
+      
+      <!-- Header -->
+      <div class="p-6 sm:p-8">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-[#0B3954] text-white">
+            {{ product.category }}
+          </span>
+          {% if product.is_featured %}
+            <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-[#E0FF4F] text-[#0B3954]">
+              Featured
+            </span>
+          {% endif %}
+        </div>
 
-{% if product.thumbnail %}
-<img src="{{ product.thumbnail }}" alt="Product thumbnail" width="300">
-<br /><br />
-{% endif %}
+        <h1 class="text-3xl sm:text-4xl font-bold text-[#0B3954] leading-tight mb-4">
+          {{ product.name }}
+        </h1>
 
-<p>{{ product.description }}</p>
+        <div class="flex flex-wrap items-center text-sm text-gray-500 gap-2">
+          <time datetime="{{ product.created_at|date:'c' }}">
+            {{ product.created_at|date:"d M Y H:i" }}
+          </time>
+          <p class="text-lg font-extrabold text-[#FF6663] mb-1">Rp {{ product.price|floatformat:0 }}</p>
+        </div>
+      </div>
 
-{% if product.user %}
-    <p>Seller: {{ product.user.username }}</p>
-{% else %}
-    <p>Seller: Anonymous</p>
-{% endif %}
+      <!-- Product Image -->
+      {% if product.thumbnail %}
+        <div class="px-6 sm:px-8">
+          <img src="{{ product.thumbnail }}" 
+               alt="{{ product.name }}" 
+               class="w-full h-64 sm:h-80 lg:h-96 object-cover rounded-lg">
+        </div>
+      {% endif %}
 
+      <!-- Content -->
+      <div class="p-6 sm:p-8">
+        <div class="text-gray-700 leading-relaxed text-base sm:text-lg mb-4">
+          {{ product.description }}
+        </div>
 
-{% endblock content %}
+        <!-- Stock & Rating -->
+        <div class="flex items-center justify-between mt-4">
+          <p class="text-sm text-gray-500">Stock: {{ product.stock }}</p>
+
+          <!-- Rating -->
+          <div class="flex items-center">
+            {% for i in "12345" %}
+              {% if forloop.counter <= product.rating %}
+                <span class="text-yellow-400 text-base">★</span>
+              {% else %}
+                <span class="text-gray-300 text-base">☆</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Owner Info -->
+      <div class="border-t border-[#BFD7EA] p-6 sm:p-8 bg-[#F9FBFD] flex justify-between items-center">
+        <div>
+          <p class="font-medium text-[#0B3954]">
+            Seller: {{ product.user.username }}
+          </p>
+          <p class="text-sm text-gray-500">Product Owner</p>
+        </div>
+
+        <!-- Action Buttons -->
+        {% if user.is_authenticated and product.user == user %}
+          <div class="flex gap-2">
+            <a href="{% url 'main:edit_product' product.pk %}">
+              <button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">
+                Edit
+              </button>
+            </a>  
+        </div>
+        {% endif %}
+        
+{% endblock %}

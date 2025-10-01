@@ -1,7 +1,22 @@
-from django.forms import ModelForm
-from main.models import Product
+from django import forms
+from .models import Product
 
-class ProductForm(ModelForm):
+class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'price', 'description', 'thumbnail', 'category', 'is_featured', 'stock', 'rating', 'brand', 'size', 'color']
+        fields = ['name', 'price', 'description', 'thumbnail', 'category', 'stock']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full border border-[#0B3954] rounded-md px-3 py-2'
+            }),
+            'price': forms.NumberInput(attrs={
+                'class': 'w-full border border-[#0B3954] rounded-md px-3 py-2'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full border border-[#0B3954] rounded-md px-3 py-2 h-28'
+            }),
+            'thumbnail': forms.URLInput(attrs={
+                'class': 'w-full border border-[#0B3954] rounded-md px-3 py-2',
+                'placeholder': 'https://example.com/image.jpg'
+            }),
+        }

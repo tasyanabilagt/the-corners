@@ -28,7 +28,7 @@ class Product(models.Model):
 
     # Atribut tambahan produk yang bersifat opsional
     stock = models.PositiveIntegerField(default=0)
-    rating = models.FloatField(default=0.0)
+    rating = models.IntegerField(default=0)
     brand = models.CharField(max_length=100, blank=True, null=True)
     size = models.CharField(max_length=20, blank=True, null=True)
     color = models.CharField(max_length=30, blank=True, null=True)

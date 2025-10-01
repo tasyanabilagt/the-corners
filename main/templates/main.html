@@ -1,61 +1,48 @@
 {% extends 'base.html' %}
 {% block content %}
+{% include 'navbar.html' %}
 
-<h1>The Corners</h1>
+<div class="max-w-6xl mx-auto p-6">
 
-<h4>NPM: </h4>
-<p>{{ npm }}</p> 
-
-<h4>Name: </h4>
-<p>{{ name }}</p> 
-
-<h4>Class: </h4>
-<p>{{ class }}</p>
-
-<a href="{% url 'main:create_product' %}">
-    <button>+ Add New Product</button>
-</a>
-
-<a href="{% url 'main:logout' %}">
-  <button>Logout</button>
-</a>
-
-<h5>Sesi terakhir login: {{ last_login }} </h5>
-<h5>Currently logged in as: {{ user }} </h5>
-<hr>
-
-<a href="?filter=all">
-    <button type="button">All Products</button>
-</a>
-<a href="?filter=my">
-    <button type="button">My Products</button>
-</a> 
-
-{% if not product_list %}
-    <p>Belum ada data produk yang terdaftar pada The Corners.</p>
-{% else %}
-    {% for product in product_list %}
-    <div>
-        <h2><a href="{% url 'main:show_product_detail' product.id %}">{{ product.name }}</a></h2>
-
-        <p><b>{{ product.category }}</b>
-        {% if product.is_featured %} | <b>Featured</b>{% endif %} 
-        <i>{{ product.created_at|date:"d M Y H:i" }}</i>
-        | Rp {{ product.price|floatformat:0 }}
-        | Stock: {{ product.stock }}
-        | Rating: {{ product.rating }}</p>
-
-        {% if product.thumbnail %}
-            <img src="{{ product.thumbnail }}" alt="{{ product.name }}" width="150" height="150">
-            <br/>
-        {% endif %}
-
-        <p>{{ product.description|truncatewords:25 }}</p>
-        
-        <p><a href="{% url 'main:show_product_detail' product.id %}"><button>Show Detail</button></a></p>
+  <!-- Header Info -->
+  <h1 class="text-3xl font-bold text-[#0B3954] mb-6">The Corners</h1>
+  <div class="bg-[#BFD7EA] p-4 rounded-lg shadow flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    
+    <!-- Filter Buttons (kiri) -->
+    <div class="flex gap-2 sm:mb-0">
+      <a href="?filter=all">
+        <button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">
+          All Products
+        </button>
+      </a>
+      <a href="?filter=my">
+        <button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">
+          My Products
+        </button>
+      </a>
     </div>
-    <hr>
+
+    <!-- User Info (kanan) -->
+    <div class="text-sm text-[#0B3954]">
+      <p><b>Last login:</b> {{ last_login }}</p>
+      <p><b>Currently logged in as:</b> {{ user.username }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Product List -->
+{% if not product_list %}
+  <div class="text-center text-gray-600 py-12">
+    <p class="text-lg">Belum ada data produk yang terdaftar pada The Corners.</p>
+  </div>
+{% else %}
+<div class="max-w-6xl mx-auto px-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    {% for product in product_list %}
+      {% include 'card_product.html' with product=product %}
     {% endfor %}
+  </div>
+</div>
 {% endif %}
 
 {% endblock content %}
