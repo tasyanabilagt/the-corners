@@ -5,6 +5,7 @@ from main.views import login_user, register, logout_user
 
 app_name = 'main'
 
+# url
 urlpatterns = [
     path('', show_main, name='show_main'),
     path('create-product/', create_product, name = 'create_product'),
