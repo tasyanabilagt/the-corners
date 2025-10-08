@@ -55,7 +55,11 @@
 
     <!-- Price & Stock -->
     <p class="text-lg font-extrabold text-[#FF6663] mb-1">Rp {{ product.price|floatformat:0 }}</p>
-    <p class="text-xs text-gray-500 mb-3">Stock: {{ product.stock }}</p>
+    {% if product.stock < 6 %}
+      <p class="text-xs font-extrabold text-red-500 mb-3">Stock: {{ product.stock }}</p>
+    {% else %}
+      <p class="text-xs font-extrabold text-gray-500 mb-3">Stock: {{ product.stock }}</p>
+    {% endif %}
 
     <!-- Buttons -->
     <div class="flex gap-1">

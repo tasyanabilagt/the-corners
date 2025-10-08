@@ -1,57 +1,267 @@
 {% extends 'base.html' %}
-{% block content %}
 {% load static %}
-{% include 'navbar.html' %}
 
-
-<div class="max-w-6xl mx-auto p-6">
-
-  <!-- Header Info -->
-  <h1 class="text-3xl font-bold text-[#0B3954] mb-6">The Corners</h1>
-  <div class="bg-[#BFD7EA] p-4 rounded-lg shadow flex flex-col sm:flex-row sm:items-center sm:justify-between">
-    
-    <!-- Filter Buttons (kiri) -->
-    <div class="flex gap-2 sm:mb-0">
-      <a href="?filter=all">
-        <button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">
-          All Products
-        </button>
-      </a>
-      <a href="?filter=my">
-        <button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">
-          My Products
-        </button>
-      </a>
-    </div>
-
-    <!-- User Info (kanan) -->
-    <div class="text-sm text-[#0B3954]">
-      <p><b>Last login:</b> {{ last_login }}</p>
-      <p><b>Currently logged in as:</b> {{ user.username }}</p>
-    </div>
-  </div>
-</div>
-
-<!-- Product List -->
-{% if not product_list %}
-  <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
-        <div class="w-32 h-32 mx-auto mb-4">
-          <img src="{% static 'image/no-product.png' %}" alt="No product available" class="w-full h-full object-contain">
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No product found</h3>
-        <p class="text-gray-500 mb-6">Be the first to add product to The Corners.</p>
-        <a href="{% url 'main:create_product' %}" class="inline-flex items-center px-4 py-2 bg-[#FF6663] text-white rounded-md bg-[#FF6664] transition-colors">
-          Add Product
-        </a>
+{% block content %}
+  {% comment %} {% include 'navbar.html' %} {% endcomment %}
+  <!-- Header Info + jarak dari navbar -->
+  <div class="max-w-6xl mx-auto p-6 mt-20">
+    <div class="bg-[#BFD7EA] p-4 rounded-lg shadow flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <!-- Filter kiri -->
+      <div class="flex gap-2 sm:mb-0">
+        <a href="?filter=all"><button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">All Products</button></a>
+        <a href="?filter=my"><button class="bg-[#E0FF4F] text-[#0B3954] px-4 py-2 rounded-md hover:bg-[#FF6663] hover:text-white transition">My Products</button></a>
       </div>
-{% else %}
-<div class="max-w-6xl mx-auto px-6">
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {% for product in product_list %}
-      {% include 'card_product.html' with product=product %}
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
 
-{% endblock content %}
+      <!-- Info user kanan -->
+      <div class="text-sm text-[#0B3954]">
+        <p>
+          <b>Last login:</b> {{ last_login|default:'-' }}
+        </p>
+        <p>
+          <b>Currently logged in as:</b> {{ user.username }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product List (AJAX) -->
+  <div class="max-w-6xl mx-auto px-6">
+    <!-- Loading -->
+    <div id="loading" class="hidden bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <div class="animate-spin inline-block">⏳</div>
+      <p class="text-gray-600 mt-2">Loading products…</p>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="hidden bg-white rounded-lg border border-red-300 text-red-700 p-8">Failed to load products. Try again.</div>
+
+    <!-- Empty -->
+    <div id="empty" class="hidden bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <div class="w-32 h-32 mx-auto mb-4">
+        <img src="{% static 'image/no-product.png' %}" alt="No product available" class="w-full h-full object-contain" />
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No product found</h3>
+      <p class="text-gray-500 mb-6">Be the first to add product to The Corners.</p>
+      <button class="inline-flex items-center px-4 py-2 bg-[#FF6663] text-white rounded-md transition-colors" onclick="openCreateModal()">Add Product</button>
+      <button id="btn-refresh" class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100">Refresh</button>
+    </div>
+
+    <!-- Grid -->
+    <div id="grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+
+    <!-- Template kartu -->
+    <template id="tpl-card-product">
+      {% include 'card_product_ajax.html' %}
+    </template>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- CSRF helper ---
+      function getCookie(name) {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift())
+        return null
+      }
+      const CSRF_TOKEN = getCookie('csrftoken')
+      if (!CSRF_TOKEN) console.warn('[csrf] csrftoken cookie not found')
+    
+      // expose ke global supaya bisa dipakai modal di luar scope ini
+      window.getCookie = getCookie
+      window.CSRF_TOKEN = CSRF_TOKEN
+    
+      const PRODUCTS_JSON_BASE = "{% url 'main:products_json' %}"
+      const CURRENT_USER_ID = "{{ user.id|default_if_none:'' }}"
+    
+      const elLoading = document.getElementById('loading')
+      const elError = document.getElementById('error')
+      const elEmpty = document.getElementById('empty')
+      const elGrid = document.getElementById('grid')
+      const btnRefresh = document.getElementById('btn-refresh')
+    
+      if (!elGrid) {
+        console.error('[products] #grid container not found in DOM')
+        return
+      }
+    
+      const setShow = (el, show) => {
+        if (!el) return
+        el.classList.toggle('hidden', !show)
+        el.hidden = !show
+      }
+      function showSection({ loading = false, error = false, empty = false, grid = false }) {
+        setShow(elLoading, loading)
+        setShow(elError, error)
+        setShow(elEmpty, empty)
+        setShow(elGrid, grid)
+      }
+    
+      function formatRupiah(n) {
+        try {
+          return 'Rp ' + Number(n).toLocaleString('id-ID')
+        } catch {
+          return 'Rp ' + n
+        }
+      }
+      function formatDate(iso) {
+        if (!iso) return '-'
+        const d = new Date(iso)
+        return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      }
+      function makeStars(r) {
+        r = Number(r) || 0
+        let s = ''
+        for (let i = 1; i <= 5; i++) s += i <= r ? '★' : '☆'
+        return s
+      }
+    
+      function buildDetailLink(id) {
+        return "{% url 'main:show_product_detail' 'PLACEHOLDER' %}".replace('PLACEHOLDER', id)
+      }
+      function buildProductsUrl() {
+        const url = new URL(PRODUCTS_JSON_BASE, window.location.origin)
+        const params = new URLSearchParams(window.location.search)
+        for (const [k, v] of params) url.searchParams.set(k, v)
+        return url.toString()
+      }
+    
+      function buildCard(p) {
+        const tpl = document.getElementById('tpl-card-product')
+        const node = tpl.content.firstElementChild.cloneNode(true)
+    
+        const detailUrl = buildDetailLink(p.id)
+        node.querySelector('[data-field="detail-link"]')?.setAttribute('href', detailUrl)
+        node.querySelector('[data-field="detail-link-cta"]')?.setAttribute('href', detailUrl)
+        node.querySelector('.btn-detail')?.addEventListener('click', (e) => {
+          e.preventDefault()
+          window.location.href = detailUrl
+        })
+    
+        const img = node.querySelector('[data-field="thumbnail"]')
+        const fallback = node.querySelector('[data-field="thumbnail-fallback"]')
+        if (p.thumbnail) {
+          if (img) {
+            img.src = p.thumbnail
+            img.alt = p.name || ''
+            img.classList.remove('hidden')
+          }
+          fallback?.classList.add('hidden')
+        }
+    
+        node.querySelector('[data-field="name"]').textContent = p.name || ''
+        node.querySelector('[data-field="category"]').textContent = p.category || '-'
+        node.querySelector('[data-field="created_at"]').textContent = formatDate(p.created_at)
+        node.querySelector('[data-field="price"]').textContent = formatRupiah(p.price)
+    
+        const stockEl = node.querySelector('[data-field="stock"]')
+        stockEl.textContent = `Stock: ${p.stock ?? 0}`
+        stockEl.classList.toggle('text-red-500', (p.stock ?? 0) < 6)
+        stockEl.classList.toggle('text-gray-500', (p.stock ?? 0) >= 6)
+    
+        const feat = node.querySelector('[data-field="featured-badge"]')
+        if (feat && p.is_featured) feat.classList.remove('hidden')
+    
+        node.querySelector('[data-field="rating-stars"]').textContent = makeStars(p.rating)
+    
+        const isOwner = CURRENT_USER_ID && String(CURRENT_USER_ID) === String(p.owner_id || '')
+        const wrap = node.querySelector('[data-field="owner-action"]')
+        if (!isOwner) {
+          wrap?.querySelector('.btn-edit')?.remove()
+          wrap?.querySelector('.btn-delete')?.remove()
+        } else {
+          wrap.querySelector('.btn-edit').onclick = (e) => {
+            e.preventDefault()
+            openEditModal(p.id)
+          }
+          wrap.querySelector('.btn-delete').onclick = (e) => {
+            e.preventDefault()
+            openDeleteModal(p.id)
+          }
+        }
+        return node
+      }
+    
+      async function fetchProducts() {
+        try {
+          showSection({ loading: true })
+          const res = await fetch(buildProductsUrl(), {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin'
+          })
+          const ct = res.headers.get('content-type') || ''
+          if (!res.ok || !ct.includes('application/json')) {
+            const txt = await res.text()
+            console.error('[products] bad response:', res.status, ct, txt.slice(0, 300))
+            showSection({ error: true })
+            return
+          }
+          const list = await res.json()
+          if (!Array.isArray(list) || list.length === 0) {
+            showSection({ empty: true })
+            return
+          }
+    
+          elGrid.innerHTML = ''
+          const frag = document.createDocumentFragment()
+          list.forEach((p) => frag.appendChild(buildCard(p)))
+          elGrid.appendChild(frag)
+          showSection({ grid: true })
+        } catch (err) {
+          console.error('[products] fetch threw:', err)
+          showSection({ error: true })
+        }
+      }
+    
+      // ====== EDIT & DELETE (pakai CSRF_TOKEN dari scope ini) ======
+      async function submitEdit(productId, payload) {
+        const res = await fetch(`/product/${productId}/edit-ajax/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': CSRF_TOKEN,
+            'X-Requested-With': 'XMLHttpRequest',
+            Accept: 'text/plain',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+          },
+          body: new URLSearchParams(payload),
+          credentials: 'same-origin'
+        })
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('[edit] failed', res.status, txt)
+          alert('Edit failed:\n' + txt.slice(0, 600))
+          return
+        }
+        document.dispatchEvent(new Event('productChanged'))
+      }
+    
+      async function submitDelete(productId) {
+        const res = await fetch(`/product/${productId}/delete-ajax/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': CSRF_TOKEN,
+            'X-Requested-With': 'XMLHttpRequest',
+            Accept: 'text/plain'
+          },
+          credentials: 'same-origin'
+        })
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('[delete] failed', res.status, txt)
+          alert('Delete failed:\n' + txt.slice(0, 600))
+          return
+        }
+        document.dispatchEvent(new Event('productChanged'))
+      }
+    
+      // ekspor untuk dipakai modal
+      window.submitEdit = submitEdit
+      window.submitDelete = submitDelete
+    
+      btnRefresh?.addEventListener('click', fetchProducts)
+      document.addEventListener('productChanged', fetchProducts)
+      fetchProducts()
+    })
+  </script>
+{% endblock %}

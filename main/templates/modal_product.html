@@ -1,0 +1,77 @@
+<!-- Modal Create/Update Product -->
+<div id="productModal" class="hidden fixed inset-0 z-50 w-full flex items-center justify-center bg-black/40">
+  <div class="bg-white rounded-xl shadow-xl w-[92%] sm:w-[70%] md:w-[50%] max-h-screen overflow-y-auto">
+    <div class="p-5 border-b flex items-center justify-between">
+      <h3 id="productModalTitle" class="text-xl font-semibold">Create Product</h3>
+      <button onclick="hideProductModal()" class="text-gray-500 hover:text-gray-800">✕</button>
+    </div>
+
+    <form id="productForm" class="p-5 space-y-4">
+      <input type="hidden" id="product_id" name="product_id">
+      <div><label class="block text-sm">Name</label><input id="name" name="name" class="mt-1 w-full border rounded-md px-3 py-2" required></div>
+      <div><label class="block text-sm">Price</label><input id="price" name="price" type="number" min="0" class="mt-1 w-full border rounded-md px-3 py-2" required></div>
+      <div><label class="block text-sm">Category</label><input id="category" name="category" class="mt-1 w-full border rounded-md px-3 py-2"></div>
+      <div><label class="block text-sm">Thumbnail URL</label><input id="thumbnail" name="thumbnail" type="url" class="mt-1 w-full border rounded-md px-3 py-2"></div>
+      <div><label class="block text-sm">Description</label><textarea id="description" name="description" rows="3" class="mt-1 w-full border rounded-md px-3 py-2"></textarea></div>
+    </form>
+
+    <div class="p-5 border-t flex gap-3 justify-end">
+      <button onclick="hideProductModal()" class="px-4 py-2 border rounded-md">Cancel</button>
+      <button id="btn-submit-product" class="px-4 py-2 bg-[#0B3954] text-white rounded-md hover:bg-[#FF6663]">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let isEditMode = false, editingId = null;
+
+function openCreateModal() {
+  isEditMode = false; editingId = null;
+  document.getElementById("productModalTitle").textContent = "Create Product";
+  document.getElementById("productForm").reset();
+  document.getElementById("productModal").classList.remove("hidden");
+}
+
+function openEditModal(id) {
+  isEditMode = true; editingId = id;
+  document.getElementById("productModalTitle").textContent = "Edit Product";
+  // preload data by id (pakai endpoint JSON by id)
+  fetch("{% url 'main:show_json_by_id' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", id))
+    .then(r => r.json())
+    .then(p => {
+      document.getElementById("product_id").value = p.id;
+      document.getElementById("name").value = p.name || "";
+      document.getElementById("price").value = p.price || 0;
+      document.getElementById("category").value = p.category || "";
+      document.getElementById("thumbnail").value = p.thumbnail || "";
+      document.getElementById("description").value = p.description || "";
+      document.getElementById("productModal").classList.remove("hidden");
+    });
+}
+
+function hideProductModal() {
+  document.getElementById("productModal").classList.add("hidden");
+}
+
+document.getElementById("btn-submit-product").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(document.getElementById("productForm"));
+  const csrftoken = (typeof getCookie === "function") ? getCookie("csrftoken") : "";
+
+  let url = "{% url 'main:create_product_ajax' %}";
+  if (isEditMode && editingId) {
+    url = "{% url 'main:edit_product_ajax' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", editingId);
+  }
+
+  const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken }, body: fd });
+
+  if (res.ok) {
+    hideProductModal();
+    if (typeof showToast === "function") showToast(isEditMode ? "Product updated" : "Product created", "", "success");
+    document.dispatchEvent(new CustomEvent("productChanged"));
+  } else {
+    const msg = await res.text();
+    if (typeof showToast === "function") showToast("Error", msg || "Failed", "error");
+  }
+});
+</script>

@@ -115,4 +115,34 @@
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  function getCookie(name){
+    const v = `; ${document.cookie}`.split(`; ${name}=`); 
+    if (v.length === 2) return decodeURIComponent(v.pop().split(';').shift());
+  }
+  const form = document.querySelector('form[method="POST"]');
+  form?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(form);
+    const res = await fetch("{% url 'main:register_ajax' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      body: fd,
+      credentials: 'same-origin'
+    });
+    if (res.ok){
+      const data = await res.json();
+      if (typeof showToast === 'function') showToast('Account created', 'Please sign in', 'success');
+      window.location.href = data.redirect || "{% url 'main:login' %}";
+    } else {
+      const err = await res.json().catch(()=>({}));
+      const firstField = Object.keys(err?.errors || {})[0];
+      const msg = firstField ? `${firstField}: ${err.errors[firstField].join(', ')}` : 'Register failed';
+      if (typeof showToast === 'function') showToast('Register failed', msg, 'error');
+    }
+  });
+})();
+</script>
 {% endblock content %}

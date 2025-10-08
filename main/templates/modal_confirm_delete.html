@@ -1,0 +1,40 @@
+<div id="confirmDeleteModal" class="hidden fixed inset-0 z-50 w-full flex items-center justify-center bg-black/40">
+  <div class="bg-white rounded-xl shadow-xl w-[90%] sm:w-[420px] p-6">
+    <h3 class="text-lg font-semibold mb-2">Delete product?</h3>
+    <p class="text-sm text-gray-600">This action cannot be undone.</p>
+    <div class="mt-6 flex justify-end gap-3">
+      <button class="px-4 py-2 border rounded-md" onclick="hideDeleteModal()">Cancel</button>
+      <button id="btn-confirm-delete" class="px-4 py-2 bg-[#FF6663] text-white rounded-md">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let deletingId = null;
+
+function openDeleteModal(id) {
+  deletingId = id;
+  document.getElementById("confirmDeleteModal").classList.remove("hidden");
+}
+function hideDeleteModal() {
+  deletingId = null;
+  document.getElementById("confirmDeleteModal").classList.add("hidden");
+}
+
+document.getElementById("btn-confirm-delete").addEventListener("click", async () => {
+  if (!deletingId) return;
+  const csrftoken = (typeof getCookie === "function") ? getCookie("csrftoken") : "";
+  const url = "{% url 'main:delete_product_ajax' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", deletingId);
+
+  const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrftoken } });
+  hideDeleteModal();
+
+  if (res.ok) {
+    if (typeof showToast === "function") showToast("Product deleted", "", "success");
+    document.dispatchEvent(new CustomEvent("productChanged"));
+  } else {
+    const msg = await res.text();
+    if (typeof showToast === "function") showToast("Delete failed", msg || "", "error");
+  }
+});
+</script>

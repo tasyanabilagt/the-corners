@@ -102,4 +102,35 @@
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  function getCookie(name){
+    const v = `; ${document.cookie}`.split(`; ${name}=`); 
+    if (v.length === 2) return decodeURIComponent(v.pop().split(';').shift());
+  }
+  const form = document.querySelector('form[method="POST"]');
+  form?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(form);
+    const res = await fetch("{% url 'main:login_ajax' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      body: fd,
+      credentials: 'same-origin'
+    });
+    if (res.ok){
+      const data = await res.json();
+      if (typeof showToast === 'function') showToast('Welcome back!', '', 'success');
+      window.location.href = data.redirect || "{% url 'main:show_main' %}";
+    } else {
+      const err = await res.json().catch(()=>({}));
+      const msg = (err?.non_field_errors && err.non_field_errors.join(', ')) || 'Login failed';
+      if (typeof showToast === 'function') showToast('Login failed', msg, 'error');
+      // optionally render error ke container
+    }
+  });
+})();
+</script>
+
 {% endblock content %}

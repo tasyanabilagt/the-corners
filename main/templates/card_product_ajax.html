@@ -1,0 +1,34 @@
+<article class="bg-[#FEFFFF] rounded-lg shadow-md overflow-hidden border border-[#0B3954] transition transform hover:scale-105 hover:shadow-xl">
+  <div class="relative">
+    <img data-field="thumbnail" alt="" class="w-full h-40 object-cover transition-transform duration-300 transform hover:scale-110 hidden">
+    <div data-field="thumbnail-fallback" class="w-full h-40 bg-[#BFD7EA]"></div>
+    <div class="absolute top-2 left-2">
+      <span class="px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#0B3954] text-white" data-field="category">Category</span>
+    </div>
+    <div class="absolute top-2 right-2 hidden" data-field="featured-badge">
+      <span class="px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#E0FF4F] text-[#0B3954]">Featured</span>
+    </div>
+  </div>
+
+  <div class="p-4">
+    <h2 class="text-lg font-bold text-[#0B3954] mb-1 line-clamp-1">
+      <a data-field="detail-link" href="#" class="hover:text-[#FF6663] transition">
+        <span data-field="name">Product Name</span>
+      </a>
+    </h2>
+
+    <p class="text-xs text-gray-500 mb-1"><i data-field="created_at">–</i></p>
+    <div class="flex items-center mb-1" data-field="rating-stars"></div>
+
+    <p class="text-lg font-extrabold text-[#FF6663] mb-1" data-field="price">Rp 0</p>
+    <p class="text-xs font-extrabold mb-3" data-field="stock">Stock: 0</p>
+
+    <div class="flex gap-1" data-field="owner-action">
+      <a data-field="detail-link-cta" href="#" class="flex-1">
+        <span class="block text-center w-full bg-[#0B3954] text-white px-2 py-1 text-sm rounded-md hover:bg-[#FF6663] transition">Detail</span>
+      </a>
+      <button type="button" class="bg-[#E0FF4F] text-[#0B3954] px-2 py-1 text-sm rounded-md hover:bg-[#FF6663] hover:text-white transition btn-edit">✏️</button>
+      <button type="button" class="bg-[#FF6663] text-white px-2 py-1 text-sm rounded-md hover:bg-red-700 transition btn-delete">🗑️</button>
+    </div>
+  </div>
+</article>

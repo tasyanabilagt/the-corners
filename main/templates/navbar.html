@@ -1,73 +1,63 @@
 <nav class="fixed top-0 left-0 w-full bg-white border-b border-gray-200 shadow z-50">
   <div class="max-w-7xl mx-auto px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
-      
-      <!-- Logo (kiri) -->
+
+      <!-- Logo -->
       <div class="flex items-center">
-        <h1 class="text-xl font-bold text-[#0B3954]">
+        <a href="/" class="text-xl font-bold text-[#0B3954]">
           <span class="text-[#FF6663]">The</span> Corners
-        </h1>
+        </a>
       </div>
 
-      <!-- Navigation (tengah) -->
+      <!-- Nav tengah -->
       <div class="flex items-center space-x-8">
         <a href="/" class="text-gray-600 hover:text-[#0B3954] font-medium transition-colors">Home</a>
         <a href="{% url 'main:create_product' %}" class="text-gray-600 hover:text-[#0B3954] font-medium transition-colors">Create Product</a>
 
         <!-- Dropdown Kategori -->
         <div class="relative">
-          <button id="kategoriBtn" 
-                  class="text-gray-600 hover:text-[#FF6663] font-medium transition-colors flex items-center">
+          <button id="kategoriBtn" class="text-gray-600 hover:text-[#FF6663] font-medium transition-colors flex items-center">
             Kategori ▾
           </button>
-          <div id="kategoriMenu" 
-              class="absolute left-0 mt-2 w-44 bg-white border rounded-lg shadow-lg hidden z-50">
-            {% for key, value in categories.items %}
-              <a href="?category={{ key }}{% if active_filter %}&filter={{ active_filter }}{% endif %}"
-                class="block px-4 py-2 text-sm 
-                        {% if active_category == key %}bg-[#BFD7EA] text-[#0B3954] font-semibold{% else %}text-gray-700 hover:bg-[#BFD7EA]{% endif %}">
-                {{ value }}
-              </a>
-            {% endfor %}
+          <div id="kategoriMenu" class="absolute left-0 mt-2 w-44 bg-white border rounded-lg shadow-lg hidden z-50">
+            {% if categories %}
+              {% for key, value in categories.items %}
+                <a href="?category={{ key }}{% if active_filter %}&filter={{ active_filter }}{% endif %}"
+                   class="block px-4 py-2 text-sm {% if active_category == key %}bg-[#BFD7EA] text-[#0B3954] font-semibold{% else %}text-gray-700 hover:bg-[#BFD7EA]{% endif %}">
+                  {{ value }}
+                </a>
+              {% endfor %}
+            {% else %}
+              <span class="block px-4 py-2 text-sm text-gray-400">No categories</span>
+            {% endif %}
           </div>
         </div>
       </div>
 
-      <!-- User info (kanan) -->
-      <div class="hidden md:flex items-center space-x-6">
+      <!-- User kanan -->
+      <div class="flex items-center space-x-6">
         {% if user.is_authenticated %}
           <div class="text-right">
-            <div class="text-sm font-semibold text-[#0B3954]">{{ name }}</div>
-            <div class="text-xs text-gray-500">{{ npm }} - {{ class }}</div>
+            <div class="text-sm font-semibold text-[#0B3954]">{{ name|default:user.username }}</div>
+            <div class="text-xs text-gray-500">
+              {% if npm %}{{ npm }}{% endif %}{% if class %}{% if npm %} - {% endif %}{{ class }}{% endif %}
+            </div>
           </div>
-          <a href="{% url 'main:logout' %}" class="text-[#FF6663] hover:text-red-700 font-medium transition-colors">Logout</a>
+          <!-- Logout via AJAX -->
+          <a href="#"
+             class="js-logout text-[#FF6663] hover:text-red-700 font-medium transition-colors"
+             data-fallback="{% url 'main:logout' %}">
+            Logout
+          </a>
         {% else %}
           <a href="{% url 'main:login' %}" class="text-gray-600 hover:text-[#0B3954] font-medium transition-colors">Login</a>
           <a href="{% url 'main:register' %}" class="bg-[#E0FF4F] hover:bg-[#FF6663] text-[#0B3954] hover:text-white px-4 py-2 rounded font-medium transition-colors">Register</a>
         {% endif %}
       </div>
-    </div>
-  </div>
-</nav>
 
-<script>
-  const kategoriBtn = document.getElementById("kategoriBtn");
-  const kategoriMenu = document.getElementById("kategoriMenu");
-
-  kategoriBtn.addEventListener("click", () => {
-    kategoriMenu.classList.toggle("hidden");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!kategoriBtn.contains(e.target) && !kategoriMenu.contains(e.target)) {
-      kategoriMenu.classList.add("hidden");
-    }
-  });
-</script>
-
-      <!-- Mobile Menu Button -->
+      <!-- Tombol mobile -->
       <div class="md:hidden flex items-center">
-        <button class="mobile-menu-button p-2 text-gray-600 hover:text-[#0B3954] transition-colors">
+        <button id="mobileMenuButton" class="p-2 text-gray-600 hover:text-[#0B3954] transition-colors" aria-controls="mobileMenu" aria-expanded="false">
           <span class="sr-only">Open menu</span>
           <div class="w-6 h-6 flex flex-col justify-center items-center">
             <span class="bg-current block h-0.5 w-6 rounded-sm"></span>
@@ -76,53 +66,107 @@
           </div>
         </button>
       </div>
+
     </div>
   </div>
 
   <!-- Mobile Menu -->
-  <div class="mobile-menu hidden md:hidden bg-white border-t border-gray-200">
+  <div id="mobileMenu" class="md:hidden bg-white border-t border-gray-200 hidden">
     <div class="px-6 py-4 space-y-4">
-      
-      <!-- Mobile Navigation Links -->
       <div class="space-y-1">
         <a href="/" class="block text-gray-600 hover:text-[#0B3954] font-medium py-2 transition-colors">Home</a>
         <a href="{% url 'main:create_product' %}" class="block text-gray-600 hover:text-[#0B3954] font-medium py-2 transition-colors">Create Product</a>
       </div>
 
-      <!-- Mobile Categories -->
       <div class="border-t border-gray-200 pt-4">
         <p class="text-xs uppercase text-gray-400 mb-2">Kategori</p>
-        {% for key, value in categories.items %}
-          <a href="?category={{ key }}{% if active_filter %}&filter={{ active_filter }}{% endif %}"
-             class="block py-2 {% if active_category == key %}bg-[#BFD7EA] text-[#0B3954] font-semibold{% else %}text-gray-600 hover:text-[#0B3954]{% endif %}">
-            {{ value }}
-          </a>
-        {% endfor %}
+        {% if categories %}
+          {% for key, value in categories.items %}
+            <a href="?category={{ key }}{% if active_filter %}&filter={{ active_filter }}{% endif %}"
+               class="block py-2 {% if active_category == key %}bg-[#BFD7EA] text-[#0B3954] font-semibold{% else %}text-gray-600 hover:text-[#0B3954]{% endif %}">
+              {{ value }}
+            </a>
+          {% endfor %}
+        {% endif %}
       </div>
 
-      <!-- Mobile User Section -->
+      {% if user.is_authenticated %}
         <div class="border-t border-gray-200 pt-4">
-        {% if user.is_authenticated %}
-            <div class="mb-4">
-            <div class="font-medium text-[#0B3954]">{{ name }}</div>
-            <div class="text-sm text-gray-500">{{ npm|default:"Student" }} - {{ class|default:"Class" }}</div>
+          <div class="mb-4">
+            <div class="font-medium text-[#0B3954]">{{ name|default:user.username }}</div>
+            <div class="text-sm text-gray-500">
+              {% if npm %}{{ npm }}{% endif %}{% if class %}{% if npm %} - {% endif %}{{ class }}{% endif %}
             </div>
-            <a href="{% url 'main:logout' %}" class="block text-[#FF6663] hover:text-red-700 font-medium py-2 transition-colors">Logout</a>
-        {% else %}
-            <div class="space-y-3">
-            <a href="{% url 'main:login' %}" class="block text-gray-600 hover:text-[#0B3954] font-medium py-2 transition-colors">Login</a>
-            <a href="{% url 'main:register' %}" class="block bg-[#E0FF4F] hover:bg-[#FF6663] text-[#0B3954] hover:text-white font-medium py-2 px-4 rounded text-center transition-colors">Register</a>
-            </div>
-        {% endif %}
+          </div>
+          <!-- Logout via AJAX (mobile) -->
+          <a href="#"
+             class="js-logout block text-[#FF6663] hover:text-red-700 font-medium py-2 transition-colors"
+             data-fallback="{% url 'main:logout' %}">
+            Logout
+          </a>
         </div>
+      {% else %}
+        <div class="border-t border-gray-200 pt-4 space-y-3">
+          <a href="{% url 'main:login' %}" class="block text-gray-600 hover:text-[#0B3954] font-medium py-2 transition-colors">Login</a>
+          <a href="{% url 'main:register' %}" class="block bg-[#E0FF4F] hover:bg-[#FF6663] text-[#0B3954] hover:text-white font-medium py-2 px-4 rounded text-center transition-colors">Register</a>
+        </div>
+      {% endif %}
     </div>
   </div>
 </nav>
 
 <script>
-  const btn = document.querySelector("button.mobile-menu-button");
-  const menu = document.querySelector(".mobile-menu");
-  btn.addEventListener("click", () => {
-    menu.classList.toggle("hidden");
+(function () {
+  // Mobile menu toggle
+  const btn  = document.getElementById('mobileMenuButton');
+  const menu = document.getElementById('mobileMenu');
+  btn?.addEventListener('click', () => {
+    menu.classList.toggle('hidden');
+    btn.setAttribute('aria-expanded', String(!menu.classList.contains('hidden')));
   });
+
+  // Kategori dropdown (desktop)
+  const kategoriBtn  = document.getElementById('kategoriBtn');
+  const kategoriMenu = document.getElementById('kategoriMenu');
+  if (kategoriBtn && kategoriMenu) {
+    kategoriBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      kategoriMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!kategoriBtn.contains(e.target) && !kategoriMenu.contains(e.target)) {
+        kategoriMenu.classList.add('hidden');
+      }
+    });
+  }
+
+  // ===== Logout via AJAX (+ fallback) =====
+  const LOGOUT_AJAX     = "{% url 'main:logout_ajax' %}";
+  const LOGOUT_FALLBACK = "{% url 'main:logout' %}"; // fallback GET bila AJAX gagal
+
+  function getCookie(name){
+    const v = `; ${document.cookie}`.split(`; ${name}=`);
+    if (v.length === 2) return decodeURIComponent(v.pop().split(';').shift());
+  }
+
+  async function doLogout(e){
+    e.preventDefault();
+    try {
+      const res = await fetch(LOGOUT_AJAX, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        credentials: 'same-origin'
+      });
+      if (!res.ok) throw new Error('logout failed');
+      const data = await res.json().catch(()=>({}));
+      if (typeof showToast === 'function') showToast('Logged out', '', 'success');
+      window.location.href = data.redirect || "{% url 'main:login' %}";
+    } catch (err) {
+      if (typeof showToast === 'function') showToast('Logout failed, redirecting…', '', 'error');
+      window.location.href = LOGOUT_FALLBACK;
+    }
+  }
+
+  document.querySelectorAll('.js-logout').forEach(a => a.addEventListener('click', doLogout));
+})();
 </script>
