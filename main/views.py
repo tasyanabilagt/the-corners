@@ -1,4 +1,4 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core import serializers
 from django.shortcuts import render, redirect, get_object_or_404
 from main.forms import ProductForm
@@ -11,8 +11,10 @@ from django.urls import reverse
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods, require_POST
-from django.views.decorators.csrf import ensure_csrf_cookie
-import datetime
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+import datetime, requests
+from django.utils.html import strip_tags
+import json
 
 @ensure_csrf_cookie
 @login_required(login_url='/login')
@@ -250,3 +252,71 @@ def delete_product(request, id):
     product = get_object_or_404(Product, pk=id)
     product.delete()
     return HttpResponseRedirect(reverse('main:show_main'))
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
+@csrf_exempt
+def create_product_flutter(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # 1. Ambil data Text & Lakukan strip_tags untuk keamanan
+            name = strip_tags(data.get("name", ""))
+            description = strip_tags(data.get("description", ""))
+            category = data.get("category", "")
+            thumbnail = data.get("thumbnail", "")
+            brand = strip_tags(data.get("brand", ""))
+            size = strip_tags(data.get("size", ""))
+            color = strip_tags(data.get("color", ""))
+        
+            price = int(data.get("price", 0))
+            stock = int(data.get("stock", 0))
+            rating = int(data.get("rating", 0))
+            is_featured = data.get("is_featured", False)
+            
+            user = request.user
+
+            # 3. Buat object Product baru
+            new_product = Product(
+                name=name,
+                price=price,          
+                description=description,
+                category=category,
+                thumbnail=thumbnail,
+                stock=stock,         
+                rating=rating,        
+                brand=brand,        
+                size=size,           
+                color=color,          
+                is_featured=is_featured,
+                user=user
+            )
+            
+            new_product.save()
+
+            return JsonResponse({"status": "success"}, status=200)
+        
+        except Exception as e:
+            # Debugging: Print error ke terminal jika ada masalah
+            print(f"Error: {e}")
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+            
+    else:
+        return JsonResponse({"status": "error", "message": "Method not allowed"}, status=401)
